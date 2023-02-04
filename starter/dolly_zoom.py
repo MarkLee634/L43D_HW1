@@ -33,9 +33,14 @@ def dolly_zoom(
     fovs = torch.linspace(5, 120, num_frames)
 
     renders = []
-    for fov in tqdm(fovs):
-        distance = 3  # TODO: change this.
-        T = [[0, 0, 3]]  # TODO: Change this.
+    distance = 4  # TODO: change this.
+    distance_list = torch.linspace(5, 1.5, num_frames)
+
+    for i,fov in enumerate(tqdm(fovs)):
+        
+        z = distance_list[i]
+        # print(f"fov: {int(fov.item())}, z: {z}")
+        T = [[0, 0, z]]  # TODO: Change this.
         cameras = pytorch3d.renderer.FoVPerspectiveCameras(fov=fov, T=T, device=device)
         rend = renderer(mesh, cameras=cameras, lights=lights)
         rend = rend[0, ..., :3].cpu().numpy()  # (N, H, W, 3)
@@ -52,7 +57,7 @@ def dolly_zoom(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num_frames", type=int, default=10)
+    parser.add_argument("--num_frames", type=int, default=100)
     parser.add_argument("--duration", type=float, default=3)
     parser.add_argument("--output_file", type=str, default="images/dolly.gif")
     parser.add_argument("--image_size", type=int, default=256)
