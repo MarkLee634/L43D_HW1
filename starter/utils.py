@@ -11,6 +11,9 @@ from pytorch3d.renderer import (
 )
 from pytorch3d.io import load_obj
 
+import pytorch3d
+
+import sys
 
 def get_device():
     """
@@ -136,3 +139,41 @@ def load_obj_mesh(path="data/cow_mesh.obj"):
     vertices, faces, _ = load_obj(path)
     faces = faces.verts_idx
     return vertices, faces
+
+def gif_from_pcloud(vert, rgb, renderer, dist, NUM_VIEW, device):
+
+    # Place a point light 
+    lights = pytorch3d.renderer.PointLights(location=[[0, 0, -dist]], device=device)
+
+    
+    NUM_VIEWS = 36
+    # transform the camera around the obj 360 degrees
+    azim = torch.linspace(-180, 180, NUM_VIEWS)
+
+    #batch plcoud for each view
+    point_cloud = pytorch3d.structures.Pointclouds(points=vert, features=rgb)
+    
+    rend_list = []
+    for i in range (NUM_VIEWS):
+
+
+        # Prepare the camera:
+        # specify elevation and azimuth angles for each viewpoint as tensors. 
+        R, T = pytorch3d.renderer.look_at_view_transform(dist=dist, azim=azim[i])
+        R = R @ torch.tensor([ [ -1, 0., 0.], [0., -1., 0], [0., 0, 1.] ])
+
+
+        camera = pytorch3d.renderer.FoVPerspectiveCameras(device=device, R=R, T=T)
+
+
+        # Render the obj.
+        rend = renderer(point_cloud, cameras=camera, lights=lights)
+        rend = rend.cpu().numpy()[0, ..., :3]  # (B, H, W, 4) -> (H, W, 3)
+        rend_list.append(rend)
+
+
+    return rend_list
+
+#===========
+
+    

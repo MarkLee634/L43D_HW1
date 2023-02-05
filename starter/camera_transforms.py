@@ -17,6 +17,15 @@ def render_cow(
     image_size=256,
     R_relative=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
     T_relative=[0, 0, 0],
+
+    # R = R_relative @ torch.tensor([ [ 0, -1, 0], [ 1., 0, 0], [0., 0, 1] ])
+
+    # T = R_relative @ torch.tensor([0.0, 0, 5]) + T_relative
+
+    # T = R_relative @ torch.tensor([.5, -.5, 3]) + T_relative
+
+    # R = R_relative @ torch.tensor([ [ 0, 0, -1.], [0, 1., 0], [1., 0, 0] ])
+
     device=None,
 ):
     if device is None:
@@ -25,7 +34,7 @@ def render_cow(
 
     R_relative = torch.tensor(R_relative).float()
     T_relative = torch.tensor(T_relative).float()
-    R = R_relative @ torch.tensor([[1.0, 0, 0], [0, 1, 0], [0, 0, 1]])
+    R = R_relative @ torch.tensor([ [ 0, 0, -1.], [0, 1., 0], [1., 0, 0] ])
     T = R_relative @ torch.tensor([0.0, 0, 3]) + T_relative
     # since the pytorch3d internal uses Point= point@R+t instead of using Point=R @ point+t,
     # we need to add R.t() to compensate that.
@@ -46,3 +55,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     plt.imsave(args.output_path, render_cow(cow_path=args.cow_path, image_size=args.image_size))
+    # plt.imshow(render_cow(cow_path=args.cow_path, image_size=args.image_size))
+    # plt.show()

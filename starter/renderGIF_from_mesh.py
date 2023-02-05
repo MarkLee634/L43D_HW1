@@ -10,9 +10,41 @@ import matplotlib.pyplot as plt
 import pytorch3d
 import torch
 import imageio
+import numpy as np
 
 from starter.utils import get_device, get_mesh_renderer, load_obj_mesh
 
+def assign_color_from_vertices(vertices, color1, color2):
+    textures = torch.ones_like(vertices)  # (N_v, 3)
+    textures = textures * torch.tensor(color1)  # (N_v, 3)
+
+    print(f"1. shape of color {torch.tensor(color1).shape }")
+
+    z = vertices[:,2]
+    z_min = torch.min(z)
+    z_max = torch.max(z)
+
+    alpha = (z-z_min)/(z_max-z_min)
+
+    color1 = np.array(color1)
+    color2 = np.array(color2)
+    
+    color_list = []
+    for a in alpha:
+        # print(f" from a {a}, color1 {color1}")
+        color = a * color2 + (1-a) * color1
+        color_list.append(color)
+    
+
+    print(f"2. vert shape {torch.ones_like(vertices).shape} ") 
+
+
+    for texture_index in range(len(textures)):
+        textures[texture_index] = textures[texture_index]  * torch.tensor(color_list[texture_index])
+    
+    print(f"4. shape of textures {textures.shape}")
+    textures = textures.unsqueeze(0)  # (N_v, 3) -> (1, N_v, 3)
+    return textures
 
 
 def render_GIF_from_obj(
@@ -32,10 +64,20 @@ def render_GIF_from_obj(
 
     # Get the vertices, faces, and textures.
     vertices, faces = load_obj_mesh(obj_path)
+    
+
+    color1=[1.,0., 1.]
+    color2=[0., 1., 0.]
+
+    textures = assign_color_from_vertices(vertices, color1, color2)
+
     vertices = vertices.unsqueeze(0)  # (N_v, 3) -> (1, N_v, 3)
     faces = faces.unsqueeze(0)  # (N_f, 3) -> (1, N_f, 3)
-    textures = torch.ones_like(vertices)  # (1, N_v, 3)
-    textures = textures * torch.tensor(color)  # (1, N_v, 3)
+
+    # textures = torch.ones_like(vertices)  # (1, N_v, 3)
+    # textures = textures * torch.tensor(color)  # (1, N_v, 3)
+
+    
     mesh = pytorch3d.structures.Meshes(
         verts=vertices,
         faces=faces,
@@ -72,7 +114,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--obj_path", type=str, default="data/cow.obj")
-    parser.add_argument("--output_path", type=str, default="images/cow_render.gif")
+    parser.add_argument("--output_path", type=str, default="images/cow_color_render.gif")
     parser.add_argument("--image_size", type=int, default=256)
     args = parser.parse_args()
 
